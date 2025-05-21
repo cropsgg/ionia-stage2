@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, User } from "lucide-react";
+import { Menu, X, User, Building, Users, Settings } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/redux/hooks/hooks";
 import { getCurrentUser } from "@/redux/slices/authSlice";
@@ -28,10 +28,9 @@ export default function Navbar({ className = "" }: NavbarProps) {
 
   const navItems = [
     { name: "Home", href: "/" },
-    { name: "JEE Mains", href: "/exam/jee-mains" },
-    { name: "JEE Advanced", href: "/exam/jee-advanced" },
-    { name: "CUET", href: "/exam/cuet" },
-    { name: "Practice", href: "/practice" },
+    { name: "Schools", href: "/management/superadmin/schools", icon: <Building className="mr-2 h-4 w-4" /> },
+    { name: "Users", href: "/management/school-admin/users", icon: <Users className="mr-2 h-4 w-4" /> },
+    { name: "Settings", href: "/management/school-admin/settings", icon: <Settings className="mr-2 h-4 w-4" /> },
   ];
 
   const displayName = user?.fullName || 'Guest';
@@ -60,10 +59,11 @@ export default function Navbar({ className = "" }: NavbarProps) {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`text-sm font-medium transition-colors hover:text-emerald-600 ${
+                className={`flex items-center text-sm font-medium transition-colors hover:text-emerald-600 ${
                   pathname === item.href ? "text-emerald-600" : "text-gray-600"
                 }`}
               >
+                {item.icon && item.icon}
                 {item.name}
               </Link>
             ))}
@@ -75,7 +75,7 @@ export default function Navbar({ className = "" }: NavbarProps) {
                 {hasAdminAccess && (
                   <div className="flex items-center space-x-4">
                     <Link
-                      href="/admin"
+                      href="/management/dashboard"
                       className="flex items-center space-x-2 text-gray-600 hover:text-emerald-600 transition-colors"
                     >
                       <svg 
@@ -89,13 +89,13 @@ export default function Navbar({ className = "" }: NavbarProps) {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                       <span className="text-sm font-medium">
-                        {isSuperAdmin ? 'Super Admin' : 'Admin'}
+                        Management Portal
                       </span>
                     </Link>
                   </div>
                 )}
                 <Link
-                  href="/dashboard"
+                  href="/management/profile"
                   className="flex items-center space-x-2 text-gray-600 hover:text-emerald-600 transition-colors"
                 >
                   <User className="w-5 h-5" />
@@ -143,11 +143,12 @@ export default function Navbar({ className = "" }: NavbarProps) {
                   <Link
                     key={item.name}
                     href={item.href}
-                    className={`text-sm font-medium transition-colors hover:text-emerald-600 ${
+                    className={`flex items-center text-sm font-medium transition-colors hover:text-emerald-600 ${
                       pathname === item.href ? "text-emerald-600" : "text-gray-600"
                     }`}
                     onClick={() => dispatch(setNavbarOpen(false))}
                   >
+                    {item.icon && item.icon}
                     {item.name}
                   </Link>
                 ))}
@@ -155,15 +156,15 @@ export default function Navbar({ className = "" }: NavbarProps) {
                   <>
                     {hasAdminAccess && (
                       <Link
-                        href="/admin"
+                        href="/management/dashboard"
                         className="text-sm font-medium text-gray-600 hover:text-emerald-600 transition-colors"
                         onClick={() => dispatch(setNavbarOpen(false))}
                       >
-                        {isSuperAdmin ? 'Super Admin Panel' : 'Admin Panel'}
+                        Management Portal
                       </Link>
                     )}
                     <Link
-                      href="/dashboard"
+                      href="/management/profile"
                       className="text-sm font-medium text-gray-600 hover:text-emerald-600 transition-colors"
                       onClick={() => dispatch(setNavbarOpen(false))}
                     >

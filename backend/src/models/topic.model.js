@@ -9,6 +9,21 @@ const topicSchema = new Schema(
         owner: {
             type: Schema.Types.ObjectId,
             ref: "User"
+        },
+        schoolId: {
+            type: Schema.Types.ObjectId,
+            ref: "School",
+            required: true,
+            index: true
+        },
+        subjectId: {
+            type: Schema.Types.ObjectId,
+            ref: "Subject",
+            index: true
+        },
+        isActive: {
+            type: Boolean,
+            default: true
         }
     },
     {

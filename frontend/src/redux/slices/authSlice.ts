@@ -26,14 +26,46 @@ interface AuthState {
   lastTokenRefresh: number | null;
 }
 
+// Get initial state from storage (if available)
+let initialUser = null;
+let initialToken = null;
+let initialAuthenticated = false;
+let initialLastTokenRefresh = null;
+
+if (typeof window !== 'undefined') {
+  const storedToken = localStorage.getItem('accessToken');
+  const storedMockUser = localStorage.getItem('mockUser');
+  const storedLastRefresh = localStorage.getItem('lastTokenRefresh');
+  
+  // Check for mock user first (for demo mode)
+  if (storedMockUser) {
+    try {
+      initialUser = JSON.parse(storedMockUser);
+      initialToken = 'mock-jwt-token';
+      initialAuthenticated = true;
+    } catch (e) {
+      console.error('Error parsing mock user:', e);
+    }
+  } 
+  // Then check for real token
+  else if (storedToken) {
+    initialToken = storedToken;
+    initialAuthenticated = true;
+  }
+  
+  if (storedLastRefresh) {
+    initialLastTokenRefresh = parseInt(storedLastRefresh);
+  }
+}
+
 // Initial state
 const initialState: AuthState = {
-  user: null,
-  accessToken: typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null,
-  isAuthenticated: false,
+  user: initialUser,
+  accessToken: initialToken,
+  isAuthenticated: initialAuthenticated,
   loading: false,
   error: null,
-  lastTokenRefresh: null,
+  lastTokenRefresh: initialLastTokenRefresh,
 };
 
 // Async thunks
@@ -198,9 +230,20 @@ const authSlice = createSlice({
       state.loading = false;
       state.lastTokenRefresh = null;
       if (typeof window !== 'undefined') {
+        // Clear all auth related items
         localStorage.removeItem('accessToken');
         localStorage.removeItem('lastTokenRefresh');
         localStorage.removeItem('redirectTo');
+        localStorage.removeItem('mockUser');
+        
+        // Remove cookie if in browser
+        try {
+          // This will be handled by js-cookie in the components
+          // that have access to it
+          document.cookie = 'mockUser=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        } catch (e) {
+          console.error('Error removing cookie:', e);
+        }
       }
     }
   },

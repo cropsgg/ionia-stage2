@@ -1,120 +1,100 @@
-import * as React from "react"
+import React from 'react';
+import { twMerge } from 'tailwind-merge';
 
-import { cn } from "@/lib/utils"
-
-const Table = React.forwardRef<
-  HTMLTableElement,
-  React.HTMLAttributes<HTMLTableElement>
->(({ className, ...props }, ref) => (
-  <div className="relative w-full overflow-auto">
-    <table
-      ref={ref}
-      className={cn("w-full caption-bottom text-sm", className)}
-      {...props}
-    />
-  </div>
-))
-Table.displayName = "Table"
-
-const TableHeader = React.forwardRef<
-  HTMLTableSectionElement,
-  React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("[&_tr]:border-b", className)} {...props} />
-))
-TableHeader.displayName = "TableHeader"
-
-const TableBody = React.forwardRef<
-  HTMLTableSectionElement,
-  React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, ...props }, ref) => (
-  <tbody
-    ref={ref}
-    className={cn("[&_tr:last-child]:border-0", className)}
-    {...props}
-  />
-))
-TableBody.displayName = "TableBody"
-
-const TableFooter = React.forwardRef<
-  HTMLTableSectionElement,
-  React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, ...props }, ref) => (
-  <tfoot
-    ref={ref}
-    className={cn(
-      "border-t bg-muted/50 font-medium [&>tr]:last:border-b-0",
-      className
-    )}
-    {...props}
-  />
-))
-TableFooter.displayName = "TableFooter"
-
-const TableRow = React.forwardRef<
-  HTMLTableRowElement,
-  React.HTMLAttributes<HTMLTableRowElement>
->(({ className, ...props }, ref) => (
-  <tr
-    ref={ref}
-    className={cn(
-      "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted",
-      className
-    )}
-    {...props}
-  />
-))
-TableRow.displayName = "TableRow"
-
-const TableHead = React.forwardRef<
-  HTMLTableCellElement,
-  React.ThHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
-  <th
-    ref={ref}
-    className={cn(
-      "h-10 px-2 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
-      className
-    )}
-    {...props}
-  />
-))
-TableHead.displayName = "TableHead"
-
-const TableCell = React.forwardRef<
-  HTMLTableCellElement,
-  React.TdHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
-  <td
-    ref={ref}
-    className={cn(
-      "p-2 align-middle [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
-      className
-    )}
-    {...props}
-  />
-))
-TableCell.displayName = "TableCell"
-
-const TableCaption = React.forwardRef<
-  HTMLTableCaptionElement,
-  React.HTMLAttributes<HTMLTableCaptionElement>
->(({ className, ...props }, ref) => (
-  <caption
-    ref={ref}
-    className={cn("mt-4 text-sm text-muted-foreground", className)}
-    {...props}
-  />
-))
-TableCaption.displayName = "TableCaption"
-
-export {
-  Table,
-  TableHeader,
-  TableBody,
-  TableFooter,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableCaption,
+interface Column<T> {
+  header: string;
+  accessor: keyof T | ((data: T) => React.ReactNode);
+  className?: string;
 }
+
+interface TableProps<T> {
+  data: T[];
+  columns: Column<T>[];
+  className?: string;
+  onRowClick?: (item: T) => void;
+  isLoading?: boolean;
+  emptyState?: React.ReactNode;
+}
+
+function Table<T extends Record<string, any>>({
+  data,
+  columns,
+  className,
+  onRowClick,
+  isLoading = false,
+  emptyState,
+}: TableProps<T>) {
+  const renderCell = (item: T, column: Column<T>) => {
+    if (typeof column.accessor === 'function') {
+      return column.accessor(item);
+    }
+    return item[column.accessor] as React.ReactNode;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="border rounded-lg overflow-hidden">
+        <div className="p-4 flex items-center justify-center h-40">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (data.length === 0 && emptyState) {
+    return (
+      <div className="border rounded-lg overflow-hidden">
+        <div className="p-8 flex items-center justify-center">
+          {emptyState}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={twMerge('border rounded-lg overflow-hidden', className)}>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b bg-muted/40">
+              {columns.map((column, index) => (
+                <th
+                  key={`header-${index}`}
+                  className={twMerge(
+                    'px-4 py-3 text-sm font-medium text-left text-muted-foreground', 
+                    column.className
+                  )}
+                >
+                  {column.header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((item, rowIndex) => (
+              <tr
+                key={`row-${rowIndex}`}
+                className={twMerge(
+                  'border-b last:border-0 hover:bg-muted/50 transition-colors',
+                  onRowClick ? 'cursor-pointer' : ''
+                )}
+                onClick={() => onRowClick && onRowClick(item)}
+              >
+                {columns.map((column, colIndex) => (
+                  <td
+                    key={`cell-${rowIndex}-${colIndex}`}
+                    className={twMerge('px-4 py-3 text-sm', column.className)}
+                  >
+                    {renderCell(item, column)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+export default Table;

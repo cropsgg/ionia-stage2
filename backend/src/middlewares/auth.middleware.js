@@ -1,79 +1,110 @@
 import jwt from "jsonwebtoken";
-import { ApiError } from "../utils/ApiError.js";
-import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
 
 /**
- * verifyJWT
- *  - Reads the token from cookies, Authorization header, or request body
- *  - Verifies it and attaches user to req.user
- *  - Throws 401 Unauthorized if invalid
+ * Simplified Authentication middleware
+ * Verifies JWT tokens and attaches the user to the request object
+ * Multi-tenant aspects have been removed while maintaining Stage 2 functionality
  */
-export const verifyJWT = asyncHandler(async (req, res, next) => {
+
+// Middleware to verify token and attach user to request
+export const verifyJWT = async (req, res, next) => {
   try {
-    // 1. Get token from multiple possible sources for maximum compatibility
-    const token = 
-      req.cookies?.accessToken || 
-      req.header("Authorization")?.replace("Bearer ", "") || 
-      req.body?.accessToken || 
-      req.query?.accessToken;
+    // Get token from authorization header
+    const token = req.cookies?.accessToken || 
+                  req.header("Authorization")?.replace("Bearer ", "");
 
     if (!token) {
-      throw new ApiError(401, "Unauthorized request. No access token found.");
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized - No token provided",
+      });
     }
 
-    // 2. Verify and decode the token
+    // Verify the token
     const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
 
-    // 3. Fetch user from DB to ensure the user still exists
-    const user = await User.findById(decodedToken._id).select("-password -refreshToken");
+    // Find the user in the database
+    const user = await User.findById(decodedToken._id)
+      .select("-password -refreshToken");
+      
     if (!user) {
-      throw new ApiError(401, "Invalid Access Token. User not found.");
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized - Invalid token",
+      });
     }
 
-    // 4. Attach user to request
-    req.user = user;
+    // Check if user is active
+    if (user.isActive === false) {
+      return res.status(403).json({
+        success: false,
+        message: "Your account has been deactivated. Please contact administrator.",
+      });
+    }
+
+    // Add user to request object for later use - simplified without tenant aspects
+    req.user = {
+      _id: user._id,
+      email: user.email,
+      username: user.username,
+      fullName: user.fullName,
+      role: user.role,
+    };
+
     next();
   } catch (error) {
-    // Handle common JWT errors with clearer messages
-    if (error.name === 'JsonWebTokenError') {
-      throw new ApiError(401, "Invalid access token.");
-    } else if (error.name === 'TokenExpiredError') {
-      throw new ApiError(401, "Access token expired.");
-    } else if (error instanceof ApiError) {
-      throw error;
-    } else {
-      throw new ApiError(401, "Authentication failed. Please login again.");
+    if (error.name === "JsonWebTokenError") {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized - Invalid token",
+      });
     }
+
+    if (error.name === "TokenExpiredError") {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized - Token expired",
+      });
+    }
+
+    // For any other errors
+    next(error);
   }
-});
-
-/**
- * verifyRole(rolesArray)
- *  - Checks if req.user has any of the allowed roles provided in the array
- *  - If not, throws 403 Forbidden
- */
-export const verifyRole = (allowedRoles) => {
-  // Ensure allowedRoles is always an array, even if a single role string is passed accidentally
-  const rolesArray = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
-  
-  return asyncHandler((req, res, next) => {
-    console.log(`🛂 Verifying role for path: ${req.originalUrl}`);
-    if (!req.user) {
-      console.error("❌ Role verification failed: No user attached to request.");
-      throw new ApiError(401, "Unauthorized: No user attached to request.");
-    }
-
-    const userRole = req.user.role;
-    console.log(`🧑 User role found: '${userRole}'`);
-    console.log(`🔑 Allowed roles: ${rolesArray.join(', ')}`);
-    
-    if (!userRole || !rolesArray.includes(userRole)) {
-      console.error(`🚫 Role verification failed: User role '${userRole}' is not in allowed roles [${rolesArray.join(', ')}].`);
-      throw new ApiError(403, "Forbidden: You do not have the required permissions.");
-    }
-
-    console.log("✅ Role verification successful.");
-    next();
-  });
 };
+
+// Optional middleware - simplified without tenant aspects
+export const optionalAuth = async (req, res, next) => {
+  try {
+    const token = req.cookies?.accessToken || 
+                  req.header("Authorization")?.replace("Bearer ", "");
+
+    if (!token) {
+      return next(); // Continue without user
+    }
+
+    try {
+      const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
+      const user = await User.findById(decodedToken._id)
+        .select("-password -refreshToken");
+        
+      if (user && user.isActive !== false) {
+        req.user = {
+          _id: user._id,
+          email: user.email,
+          username: user.username,
+          fullName: user.fullName,
+          role: user.role,
+        };
+      }
+    } catch (error) {
+      // Token validation failed, but we'll continue without user
+    }
+    
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+

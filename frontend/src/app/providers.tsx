@@ -1,16 +1,15 @@
 "use client";
 
 import React, { ReactNode } from 'react';
-import { Provider } from 'react-redux';
-import store from '@/redux/store';
+import { ReduxProvider } from '@/redux/provider';
 import ErrorBoundary from '@/components/common/ErrorBoundary';
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
     <ErrorBoundary>
-      <Provider store={store}>
+      <ReduxProvider>
         {children}
-      </Provider>
+      </ReduxProvider>
     </ErrorBoundary>
   );
 } 

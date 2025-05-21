@@ -89,17 +89,28 @@ app.use(express.static("public"));
 // ✅ Routes Import
 import userRouter from "./routes/user.routes.js";
 import questionRouter from "./routes/question.routes.js";
-// import previousYearPaperRouter from "./routes/previousYearPaper.routes.js"; // REMOVE: No longer needed
 import attemptedTestRouter from "./routes/attemptedTest.routes.js";  
 import analyticsRouter from './routes/analytics.routes.js';
-import testRouter from './routes/test.routes.js'; // Use this for ALL test types, including PYQ
+import testRouter from './routes/test.routes.js';
+import superadminRouter from './routes/superadmin.routes.js';
+import classRouter from './routes/class.routes.js';
+import subjectRouter from './routes/subject.routes.js';
+import schoolAdminRouter from './routes/schoolAdmin.routes.js';
+import homeworkRouter from './routes/homework.routes.js';
+import homeworkSubmissionRouter from './routes/homeworkSubmission.routes.js';
 
 // ✅ Routes Declaration
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/questions", questionRouter);
 app.use("/api/v1/attempted-tests", attemptedTestRouter);  
 app.use('/api', analyticsRouter); 
-app.use('/api/v1/tests', testRouter); // Use this router for fetching/managing PYQs as well
+app.use('/api/v1/tests', testRouter);
+app.use('/api/v1/superadmin', superadminRouter); // Super Admin routes for school management
+app.use('/api/v1/classes', classRouter); // Class management routes
+app.use('/api/v1/subjects', subjectRouter); // Subject management routes
+app.use('/api/v1/school-admin', schoolAdminRouter); // School Admin user management routes
+app.use('/api/v1/homework', homeworkRouter); // Homework management routes
+app.use('/api/v1/homework-submissions', homeworkSubmissionRouter); // Homework submissions routes
 
 // ✅ Add direct debug endpoint for admin analytics
 app.get('/api/debug-analytics', async (req, res) => {

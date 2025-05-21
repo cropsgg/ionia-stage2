@@ -9,9 +9,9 @@ const userSchema = new Schema(
     email: {
       type: String,
       required: true,
-      unique: true,
       lowercase: true,
       trim: true,
+      index: true,
     },
     fullName: {
       type: String,
@@ -24,7 +24,6 @@ const userSchema = new Schema(
       required: true,
       trim: true,
       index: true,
-      unique: true,
     },
     avatar: {
       type: String, // Cloudinary URL
@@ -46,11 +45,48 @@ const userSchema = new Schema(
     resetPasswordExpires: {
       type: Date,
     },
-    // NEW: Role field
+    // Email verification fields
+    emailVerificationToken: {
+      type: String,
+    },
+    emailVerificationExpires: {
+      type: Date,
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    // Simplified role field - keeping for Stage 2 compatibility
     role: {
       type: String,
-      enum: ["admin", "user", "superadmin"], // or add more roles here
-      default: "user",        // default for normal users
+      enum: ["student", "teacher", "classTeacher", "schoolAdmin", "superAdmin"],
+      required: true,
+    },
+    // Fields for teachers - keeping for Stage 2 functionality
+    assignedClasses: [
+      {
+        classId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Class",
+        },
+        subjectIds: [
+          {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Subject",
+          },
+        ],
+      },
+    ],
+    // Fields for students - keeping for Stage 2 functionality
+    enrolledClasses: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Class",
+      },
+    ],
+    isActive: {
+      type: Boolean,
+      default: true,
     },
   },
   {
@@ -70,16 +106,18 @@ userSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 
-// Generate access token (include role in the JWT payload)
+// Generate access token - simplified without multi-tenant aspects
 userSchema.methods.generateAccessToken = function () {
+  const payload = {
+    _id: this._id,
+    email: this.email,
+    username: this.username,
+    fullName: this.fullName,
+    role: this.role,
+  };
+
   const accessToken = jwt.sign(
-    {
-      _id: this._id,
-      email: this.email,
-      username: this.username,
-      fullName: this.fullName,
-      role: this.role, // Include role in the token
-    },
+    payload,
     process.env.ACCESS_TOKEN_SECRET,
     {
       expiresIn: process.env.ACCESS_TOKEN_EXPIRY,

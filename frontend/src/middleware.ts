@@ -1,42 +1,35 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Define protected paths that require authentication
-const protectedPaths = [
-  '/admin',
-  '/dashboard',
-  '/profile',
-  '/exam',
-  '/practices',
-  '/results',
-];
+// Define paths by role (consistent path patterns)
+const roleBasedPaths = {
+  student: ['/student'],
+  teacher: ['/teacher'],
+  'class-teacher': ['/class-teacher'],
+  'school-admin': ['/school-admin'],
+  'super-admin': ['/super-admin']
+};
 
-// Define admin-only paths
-const adminPaths = [
-  '/admin/questions',
-  '/admin/tests',
-  '/admin/analytics',
-  '/admin/settings',
-];
-
-// Define public paths that should redirect to dashboard if already authenticated
-const authPaths = [
-  '/auth/login',
-  '/auth/register',
-  '/auth/forgot-password',
-  '/auth/reset-password',
-];
-
-// Define paths that should be accessible without authentication
+// Define public paths that should be accessible without authentication
 const publicPaths = [
   '/',
   '/about',
   '/contact',
+  '/terms',
+  '/privacy',
   '/api/auth',
   '/_next',
   '/static',
   '/images',
   '/favicon.ico',
+];
+
+// Define auth paths that should redirect to dashboard if already authenticated
+const authPaths = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/forgot-password',
+  '/auth/reset-password',
 ];
 
 export async function middleware(request: NextRequest) {
@@ -49,21 +42,54 @@ export async function middleware(request: NextRequest) {
 
   // Get tokens from cookies
   const accessToken = request.cookies.get('accessToken')?.value;
-  const refreshToken = request.cookies.get('refreshToken')?.value;
-  const lastTokenRefresh = request.cookies.get('lastTokenRefresh')?.value;
-
-  // Check if the path is protected
-  const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path));
-  const isAdminPath = adminPaths.some(path => pathname.startsWith(path));
+  
+  // For mock/demo mode, check localStorage (which isn't accessible in middleware)
+  // Instead we'll set a cookie when logging in with mock data
+  const mockUserCookie = request.cookies.get('mockUser')?.value;
+  
+  // Check if the path is an auth path
   const isAuthPath = authPaths.some(path => pathname.startsWith(path));
 
-  // If accessing auth pages while logged in, redirect to dashboard
-  if (isAuthPath && accessToken) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+  // If accessing auth pages while logged in, redirect to appropriate dashboard based on role
+  if (isAuthPath && (accessToken || mockUserCookie)) {
+    try {
+      let userRole = null;
+      
+      // First check for mock user cookie
+      if (mockUserCookie) {
+        const mockUser = JSON.parse(mockUserCookie);
+        userRole = mockUser.role;
+      } 
+      // Then try to parse JWT if available (for real implementation)
+      else if (accessToken) {
+        const tokenData = JSON.parse(atob(accessToken.split('.')[1]));
+        userRole = tokenData.role;
+      }
+      
+      // Redirect to appropriate dashboard
+      if (userRole) {
+        let dashboardPath = '/';
+        if (userRole === 'student') dashboardPath = '/student/dashboard';
+        else if (userRole === 'teacher') dashboardPath = '/teacher/dashboard';
+        else if (userRole === 'class-teacher') dashboardPath = '/class-teacher/dashboard';
+        else if (userRole === 'school-admin') dashboardPath = '/school-admin/dashboard';
+        else if (userRole === 'super-admin') dashboardPath = '/super-admin/dashboard';
+        
+        return NextResponse.redirect(new URL(dashboardPath, request.url));
+      }
+    } catch (error) {
+      // If token parsing fails, redirect to login
+      return NextResponse.redirect(new URL('/auth/login', request.url));
+    }
   }
 
+  // Check if accessing role-based protected paths
+  const isRoleBasedPath = Object.values(roleBasedPaths).flat().some(path => 
+    pathname.startsWith(path)
+  );
+
   // If accessing protected routes without token, redirect to login
-  if (isProtectedPath && !accessToken) {
+  if (isRoleBasedPath && !accessToken && !mockUserCookie) {
     const response = NextResponse.redirect(new URL('/auth/login', request.url));
     response.cookies.set({
       name: 'redirectTo',
@@ -76,77 +102,57 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // For admin paths, verify admin role from token
-  if (isAdminPath) {
+  // For role-based paths, verify correct role access
+  if (isRoleBasedPath && (accessToken || mockUserCookie)) {
     try {
-      if (!accessToken) {
-        const response = NextResponse.redirect(new URL('/auth/login', request.url));
-        response.cookies.set({
-          name: 'redirectTo',
-          value: pathname,
-          path: '/',
-          httpOnly: true,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-        });
-        return response;
+      let userRole = null;
+      
+      // First check for mock user cookie
+      if (mockUserCookie) {
+        const mockUser = JSON.parse(mockUserCookie);
+        userRole = mockUser.role;
+      } 
+      // Then try to parse JWT if available (for real implementation)
+      else if (accessToken) {
+        const tokenData = JSON.parse(atob(accessToken.split('.')[1]));
+        userRole = tokenData.role;
       }
-
-      // Check if token needs refresh (e.g., if it's older than 30 minutes)
-      const shouldRefresh = lastTokenRefresh && 
-        (Date.now() - parseInt(lastTokenRefresh)) > 30 * 60 * 1000;
-
-      if (shouldRefresh) {
-        try {
-          const refreshResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/refresh-token`, {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-              Cookie: request.headers.get('cookie') || '',
-            },
-          });
-
-          if (!refreshResponse.ok) {
-            throw new Error('Token refresh failed');
-          }
-
-          const data = await refreshResponse.json();
-          if (data.data?.accessToken) {
-            const response = NextResponse.next();
-            response.cookies.set({
-              name: 'accessToken',
-              value: data.data.accessToken,
-              path: '/',
-              httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
-              sameSite: 'lax',
-            });
-            response.cookies.set({
-              name: 'lastTokenRefresh',
-              value: Date.now().toString(),
-              path: '/',
-              httpOnly: true,
-              secure: process.env.NODE_ENV === 'production',
-              sameSite: 'lax',
-            });
-            return response;
-          }
-        } catch (error) {
-          console.error('Token refresh failed:', error);
-          const response = NextResponse.redirect(new URL('/auth/login', request.url));
-          response.cookies.set({
-            name: 'redirectTo',
-            value: pathname,
-            path: '/',
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-          });
-          return response;
-        }
+      
+      if (!userRole) {
+        throw new Error('No role found');
+      }
+      
+      // Check if user has access to this path
+      let hasAccess = false;
+      
+      // Check if the current path starts with any of the paths allowed for the user's role
+      if (userRole === 'student' && pathname.startsWith('/student')) {
+        hasAccess = true;
+      } else if (userRole === 'teacher' && pathname.startsWith('/teacher')) {
+        hasAccess = true;
+      } else if (userRole === 'class-teacher' && 
+                (pathname.startsWith('/class-teacher') || pathname.startsWith('/teacher'))) {
+        // Class teachers can access both class-teacher and teacher paths
+        hasAccess = true;
+      } else if (userRole === 'school-admin' && pathname.startsWith('/school-admin')) {
+        hasAccess = true;
+      } else if (userRole === 'super-admin' && pathname.startsWith('/super-admin')) {
+        hasAccess = true;
+      }
+      
+      // If no access, redirect to appropriate dashboard
+      if (!hasAccess) {
+        let dashboardPath = '/';
+        if (userRole === 'student') dashboardPath = '/student/dashboard';
+        else if (userRole === 'teacher') dashboardPath = '/teacher/dashboard';
+        else if (userRole === 'class-teacher') dashboardPath = '/class-teacher/dashboard';
+        else if (userRole === 'school-admin') dashboardPath = '/school-admin/dashboard';
+        else if (userRole === 'super-admin') dashboardPath = '/super-admin/dashboard';
+        
+        return NextResponse.redirect(new URL(dashboardPath, request.url));
       }
     } catch (error) {
-      console.error('Admin path verification failed:', error);
+      // If token parsing fails, redirect to login
       const response = NextResponse.redirect(new URL('/auth/login', request.url));
       response.cookies.set({
         name: 'redirectTo',
