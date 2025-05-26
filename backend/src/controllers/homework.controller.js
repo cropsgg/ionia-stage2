@@ -4,6 +4,7 @@ import { StudentProfile } from "../models/studentProfile.model.js";
 import { Class } from "../models/class.model.js";
 import { Subject } from "../models/subject.model.js";
 import { User } from "../models/user.model.js";
+import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import mongoose from "mongoose";
 
 /**
@@ -24,13 +25,23 @@ export const createHomework = async (req, res, next) => {
       personalizationEnabled,
       adaptiveDifficulty,
       learningStylePreference,
+      rubrics
     } = req.body;
 
     // Validate required fields
-    if (!title || !classId || !subjectId || !dueDate || !questions || questions.length === 0) {
+    if (!title || !classId || !subjectId || !dueDate) {
       return res.status(400).json({
         success: false,
-        message: "Missing required fields",
+        message: "Missing required fields: title, classId, subjectId, dueDate are required",
+      });
+    }
+
+    // Validate due date is in the future
+    const dueDateObj = new Date(dueDate);
+    if (dueDateObj <= new Date()) {
+      return res.status(400).json({
+        success: false,
+        message: "Due date must be in the future",
       });
     }
 
@@ -43,7 +54,7 @@ export const createHomework = async (req, res, next) => {
     if (!classObj) {
       return res.status(404).json({
         success: false,
-        message: "Class not found",
+        message: "Class not found or you don't have access to this class",
       });
     }
 
@@ -52,7 +63,7 @@ export const createHomework = async (req, res, next) => {
     if (!subject) {
       return res.status(404).json({
         success: false,
-        message: "Subject not found",
+        message: "Subject not found or you don't have access to this subject",
       });
     }
 
@@ -61,32 +72,107 @@ export const createHomework = async (req, res, next) => {
       const isAuthorized = req.user.assignedClasses.some(
         (assignment) =>
           assignment.classId.toString() === classId &&
-          assignment.subjectIds.includes(subjectId)
+          assignment.subjectIds.some(subId => subId.toString() === subjectId)
       );
 
       if (!isAuthorized) {
         return res.status(403).json({
           success: false,
-          message: "You are not authorized to create homework for this class and subject",
+          message: "You are not authorized to create homework for this class and subject combination",
         });
       }
     }
 
-    // Create the homework
-    const newHomework = await Homework.create({
-      title,
-      description: description || "",
+    // Process file attachments if present
+    let attachments = [];
+    if (req.files && req.files.length > 0) {
+      console.log(`Processing ${req.files.length} file attachments...`);
+      
+      for (const file of req.files) {
+        try {
+          const uploadResult = await uploadOnCloudinary(file.path);
+          if (uploadResult) {
+            attachments.push({
+              fileName: file.originalname,
+              fileType: file.mimetype,
+              fileSize: file.size,
+              fileUrl: uploadResult.secure_url,
+              uploadedAt: new Date()
+            });
+            console.log(`File uploaded successfully: ${file.originalname}`);
+          }
+        } catch (uploadError) {
+          console.error(`Error uploading file ${file.originalname}:`, uploadError);
+          // Continue with other files instead of failing the entire request
+        }
+      }
+    }
+
+    // Prepare homework data
+    const homeworkData = {
+      title: title.trim(),
+      description: description?.trim() || "",
       classId,
       subjectId,
       createdBy,
       schoolId,
-      dueDate,
+      dueDate: dueDateObj,
       difficultyLevel: difficultyLevel || "medium",
-      questions,
       personalizationEnabled: personalizationEnabled || false,
       adaptiveDifficulty: adaptiveDifficulty || false,
       learningStylePreference: learningStylePreference || false,
-    });
+      attachments
+    };
+
+    // Add questions if provided
+    if (questions && Array.isArray(questions) && questions.length > 0) {
+      // Validate questions format
+      const validQuestions = questions.filter(q => 
+        q.questionText && 
+        q.questionType && 
+        ['objective', 'subjective'].includes(q.questionType) &&
+        q.marks && 
+        q.marks > 0
+      );
+
+      if (validQuestions.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "At least one valid question is required",
+        });
+      }
+
+      homeworkData.questions = validQuestions.map(q => ({
+        questionText: q.questionText.trim(),
+        questionType: q.questionType,
+        options: q.options || [],
+        marks: parseInt(q.marks) || 1,
+        difficultyLevel: q.difficultyLevel || "medium",
+        learningStyle: q.learningStyle || null,
+        attachments: q.attachments || []
+      }));
+    }
+
+    // Add basic rubrics if provided
+    if (rubrics && Array.isArray(rubrics) && rubrics.length > 0) {
+      homeworkData.rubrics = rubrics.map(rubric => ({
+        name: rubric.name || "Basic Rubric",
+        description: rubric.description || "",
+        criteria: rubric.criteria || [{
+          criterion: "Quality of Work",
+          maxMarks: 10,
+          levels: [
+            { level: "Excellent", description: "Outstanding work", marks: 10 },
+            { level: "Good", description: "Good work", marks: 8 },
+            { level: "Satisfactory", description: "Acceptable work", marks: 6 },
+            { level: "Needs Improvement", description: "Below expectations", marks: 4 }
+          ]
+        }]
+      }));
+    }
+
+    // Create the homework
+    const newHomework = await Homework.create(homeworkData);
 
     // If personalization is enabled, create initial submissions for all students
     if (personalizationEnabled) {
@@ -100,25 +186,40 @@ export const createHomework = async (req, res, next) => {
 
       // Create bulk submissions
       if (classStudents.length > 0) {
+        const totalMarks = homeworkData.questions ? 
+          homeworkData.questions.reduce((sum, q) => sum + q.marks, 0) : 0;
+          
         const submissions = classStudents.map((student) => ({
           homeworkId: newHomework._id,
           studentId: student._id,
           schoolId,
           status: "pending",
           answers: [],
-          totalMarks: questions.reduce((sum, q) => sum + (q.marks || 1), 0),
+          totalMarks
         }));
 
         await HomeworkSubmission.insertMany(submissions);
+        console.log(`Created ${submissions.length} submissions for personalized homework`);
       }
     }
+
+    // Populate response data
+    const populatedHomework = await Homework.findById(newHomework._id)
+      .populate("classId", "name yearOrGradeLevel")
+      .populate("subjectId", "name subjectCode")
+      .populate("createdBy", "fullName email");
 
     res.status(201).json({
       success: true,
       message: "Homework created successfully",
-      data: { homework: newHomework },
+      data: { 
+        homework: populatedHomework,
+        attachmentsUploaded: attachments.length,
+        studentsNotified: personalizationEnabled ? classObj.students.length : 0
+      },
     });
   } catch (error) {
+    console.error("Error creating homework:", error);
     next(error);
   }
 };

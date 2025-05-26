@@ -26,6 +26,24 @@ const homeworkSubmissionSchema = new mongoose.Schema(
       enum: ["pending", "submitted", "late", "graded"],
       default: "pending",
     },
+    // Text-based submission content
+    submissionText: {
+      type: String,
+      default: "",
+    },
+    // File attachments for submission
+    submissionAttachments: [
+      {
+        fileName: String,
+        fileType: String,
+        fileSize: Number,
+        fileUrl: String,
+        uploadedAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     answers: [
       {
         questionId: {
@@ -45,6 +63,22 @@ const homeworkSubmissionSchema = new mongoose.Schema(
           ref: "User",
         },
         gradedAt: Date,
+        // For subjective answer assessment
+        assessment: {
+          marks: Number,
+          feedback: String,
+          criteria: Object,
+          assessedBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+          },
+          assessedAt: Date,
+          assessmentMethod: {
+            type: String,
+            enum: ["manual", "AI-assisted"],
+            default: "manual"
+          }
+        }
       },
     ],
     totalMarks: {
@@ -65,6 +99,23 @@ const homeworkSubmissionSchema = new mongoose.Schema(
     gradedAt: {
       type: Date,
     },
+    // Rubric-based grading
+    rubricGrades: [
+      {
+        rubricId: {
+          type: mongoose.Schema.Types.ObjectId,
+        },
+        criteriaGrades: [
+          {
+            criterion: String,
+            level: String,
+            marks: Number,
+            feedback: String,
+          },
+        ],
+        totalRubricMarks: Number,
+      },
+    ],
     // Student learning analytics
     timeSpent: {
       type: Number, // Time in minutes
@@ -89,5 +140,7 @@ homeworkSubmissionSchema.index({ homeworkId: 1, studentId: 1 }, { unique: true }
 homeworkSubmissionSchema.index({ schoolId: 1 });
 homeworkSubmissionSchema.index({ studentId: 1, status: 1 });
 homeworkSubmissionSchema.index({ homeworkId: 1, status: 1 });
+homeworkSubmissionSchema.index({ gradedAt: 1 });
+homeworkSubmissionSchema.index({ submittedAt: 1 });
 
 export const HomeworkSubmission = mongoose.model("HomeworkSubmission", homeworkSubmissionSchema); 

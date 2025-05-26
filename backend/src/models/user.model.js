@@ -56,11 +56,21 @@ const userSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    // Simplified role field - keeping for Stage 2 compatibility
+    // Role field with proper validation
     role: {
       type: String,
       enum: ["student", "teacher", "classTeacher", "schoolAdmin", "superAdmin"],
       required: true,
+    },
+    // School association for multi-tenancy
+    schoolId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "School",
+      required: function() {
+        // Only superAdmin doesn't need a schoolId
+        return this.role !== 'superAdmin';
+      },
+      index: true, // Index for efficient queries
     },
     // Fields for teachers - keeping for Stage 2 functionality
     assignedClasses: [
@@ -84,6 +94,14 @@ const userSchema = new Schema(
         ref: "Class",
       },
     ],
+    // For class teachers - which class they are responsible for
+    assignedClass: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Class",
+      required: function() {
+        return this.role === 'classTeacher';
+      }
+    },
     isActive: {
       type: Boolean,
       default: true,
@@ -93,6 +111,41 @@ const userSchema = new Schema(
     timestamps: true,
   }
 );
+
+// Compound index for efficient school-based queries
+userSchema.index({ schoolId: 1, role: 1 });
+userSchema.index({ schoolId: 1, email: 1 }, { unique: true });
+
+// Validation to ensure email uniqueness within each school
+userSchema.pre('save', async function(next) {
+  if (this.isNew || this.isModified('email') || this.isModified('schoolId')) {
+    // For superAdmin, check global email uniqueness
+    if (this.role === 'superAdmin') {
+      const existingUser = await this.constructor.findOne({ 
+        email: this.email, 
+        _id: { $ne: this._id } 
+      });
+      if (existingUser) {
+        const error = new Error('Email already exists');
+        error.code = 11000;
+        return next(error);
+      }
+    } else {
+      // For other roles, check email uniqueness within the school
+      const existingUser = await this.constructor.findOne({ 
+        email: this.email, 
+        schoolId: this.schoolId,
+        _id: { $ne: this._id } 
+      });
+      if (existingUser) {
+        const error = new Error('Email already exists in this school');
+        error.code = 11000;
+        return next(error);
+      }
+    }
+  }
+  next();
+});
 
 // Hash password before save
 userSchema.pre("save", async function (next) {
@@ -106,7 +159,7 @@ userSchema.methods.isPasswordCorrect = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 
-// Generate access token - simplified without multi-tenant aspects
+// Generate access token with schoolId
 userSchema.methods.generateAccessToken = function () {
   const payload = {
     _id: this._id,
@@ -114,6 +167,7 @@ userSchema.methods.generateAccessToken = function () {
     username: this.username,
     fullName: this.fullName,
     role: this.role,
+    schoolId: this.schoolId, // Include schoolId in token for multi-tenancy
   };
 
   const accessToken = jwt.sign(
