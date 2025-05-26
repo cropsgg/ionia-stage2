@@ -8,7 +8,6 @@ import { FiBarChart2, FiUsers, FiGlobe, FiStar } from 'react-icons/fi';
 const fadeIn = {
   initial: { opacity: 0, y: 20 },
   whileInView: { opacity: 1, y: 0 },
-  viewport: { once: true },
   transition: { type: "tween", duration: 0.6 }
 };
 

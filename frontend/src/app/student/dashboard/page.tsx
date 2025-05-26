@@ -3,7 +3,7 @@
 import React from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
-import Card from '@/components/ui/Card';
+import Card from '@/components/ui/card';
 import StatBlock from '@/components/ui/StatBlock';
 import EmptyState from '@/components/ui/EmptyState';
 import { FiBook, FiCalendar, FiClock, FiBarChart2 } from 'react-icons/fi';
@@ -12,7 +12,7 @@ const StudentDashboard = () => {
   const { user } = useSelector((state: RootState) => state.auth);
 
   // Mock homework data
-  const pendingHomework = [];
+  const pendingHomework: any[] = [];
 
   // Mock subjects for learning progress
   const subjects = [

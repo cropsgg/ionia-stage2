@@ -28,7 +28,7 @@ const QuestionAnalysis: React.FC<QuestionAnalysisProps> = ({ id }) => {
   // Filter questions based on activeSubject
   const questions = id === 'Overall' 
     ? metadata.questions 
-    : metadata.questions?.filter(q => q.subject === id);
+    : metadata.questions?.filter((q: QuestionMetadata) => q.subject === id);
     
   if (!questions || questions.length === 0) {
     return (
@@ -60,7 +60,7 @@ const QuestionAnalysis: React.FC<QuestionAnalysisProps> = ({ id }) => {
     } else if (sortField === 'timeSpent') {
       comparison = a.timeSpent - b.timeSpent;
     } else if (sortField === 'status') {
-      const statusOrder = { correct: 0, incorrect: 1, unattempted: 2 };
+      const statusOrder: { [key: string]: number } = { correct: 0, incorrect: 1, unattempted: 2 };
       comparison = statusOrder[a.status] - statusOrder[b.status];
     } else if (sortField === 'subject') {
       comparison = a.subject.localeCompare(b.subject);

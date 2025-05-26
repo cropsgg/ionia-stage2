@@ -4,19 +4,19 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/redux/store';
 import { FiUsers, FiFileText, FiBookOpen, FiBook, FiCalendar, FiClock } from 'react-icons/fi';
-import Card from '@/components/ui/Card';
+import Card from '@/components/ui/card';
 import StatBlock from '@/components/ui/StatBlock';
 import EmptyState from '@/components/ui/EmptyState';
-import Table from '@/components/ui/Table';
+import Table from '@/components/ui/table';
 
 const TeacherDashboard = () => {
   const { user } = useSelector((state: RootState) => state.auth);
 
   // Mock data for submissions
-  const submissions = [];
+  const submissions: any[] = [];
 
   // Mock data for schedule
-  const schedule = [];
+  const schedule: any[] = [];
 
   return (
     <div className="space-y-6">

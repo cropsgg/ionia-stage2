@@ -24,7 +24,11 @@ export default function Notifications() {
 
   return (
     <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
-      {notifications.map((notification) => {
+      {notifications.map((notification: {
+        id: string;
+        message: string;
+        type: 'success' | 'error' | 'info' | 'warning';
+      }) => {
         // Determine background color based on notification type
         let bgColor = 'bg-blue-500';
         if (notification.type === 'success') bgColor = 'bg-green-500';

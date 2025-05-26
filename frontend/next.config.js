@@ -77,8 +77,7 @@ const nextConfig = {
         ]
       }
     ];
-  },
-  optimizeFonts: true
+  }
 };
 
 module.exports = nextConfig; 
