@@ -24,7 +24,7 @@ router.use(applyTenantContext);
 
 // Base homework routes for teachers
 router.post("/", 
-  checkRole(["teacher", "classTeacher", "schoolAdmin"]),
+  checkRole(["teacher", "classTeacher", "schoolAdmin"]), 
   requirePermission(PERMISSIONS.TEACHER_CREATE_HOMEWORK),
   homeworkUpload.array('attachments', 10), // Allow up to 10 attachments
   createHomework
@@ -37,7 +37,7 @@ router.get("/",
 );
 
 router.get("/student", 
-  checkRole(["student"]),
+  checkRole(["student"]), 
   requirePermission(PERMISSIONS.STUDENT_READ_ASSESSMENTS), 
   getStudentHomework
 );

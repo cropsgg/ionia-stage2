@@ -54,7 +54,7 @@ app.get("/", (req, res) => {
 
 // ✅ API Info Endpoint
 app.get("/api", (req, res) => {
-  res.json({
+    res.json({
     success: true,
     message: "Ionia Stage 2 LMS API",
     version: CONFIG.API.VERSION,
@@ -75,10 +75,10 @@ app.get("/api", (req, res) => {
 
 // Log all incoming requests in development
 if (CONFIG.SERVER.IS_DEVELOPMENT) {
-  app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl}`);
-    next();
-  });
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} - ${req.method} ${req.originalUrl}`);
+  next();
+});
 }
 
 // Error handling middleware

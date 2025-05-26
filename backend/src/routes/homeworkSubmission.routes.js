@@ -24,14 +24,14 @@ router.use(applyTenantContext);
 
 // Student submission routes
 router.post("/:homeworkId", 
-  checkRole(["student"]),
+  checkRole(["student"]), 
   requirePermission(PERMISSIONS.STUDENT_WRITE_SUBMISSIONS),
   submissionUpload.array('attachments', 5), // Allow up to 5 submission attachments
   submitHomework
 );
 
 router.get("/:homeworkId/student", 
-  checkRole(["student"]),
+  checkRole(["student"]), 
   requirePermission(PERMISSIONS.STUDENT_READ_ASSESSMENTS),
   getStudentSubmission
 );

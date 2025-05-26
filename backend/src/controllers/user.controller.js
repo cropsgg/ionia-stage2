@@ -44,12 +44,12 @@ const generateAccessAndRefreshToken = async (userId) => {
  * 7. Confirm user creation
  * 8. Return response
  *
- * Note: Role is not accepted from client; the default role="user" from the model is used
+ * Note: Role is not accepted from client; the default role="student" from the model is used
  * Admin roles should be set directly in the database
  */
 const registerUser = asyncHandler(async (req, res) => {
   // 1. Destructure user details from the request
-  const { fullName, email, username, password } = req.body;
+  const { fullName, email, username, password, role } = req.body;
 
   // 2. Validate required fields
   if ([fullName, email, username, password].some((field) => field?.trim() === "")) {
@@ -59,7 +59,18 @@ const registerUser = asyncHandler(async (req, res) => {
     );
   }
 
-  // 3. Check if a user with the same username or email already exists
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    throw new ApiError(400, "Please provide a valid email address");
+  }
+
+  // Validate password strength
+  if (password.length < 8) {
+    throw new ApiError(400, "Password must be at least 8 characters long");
+  }
+
+  // 3. Check if a user with the same username or email already exists within the same school
   const existedUser = await User.findOne({
     $or: [{ username }, { email }],
   });
@@ -68,7 +79,6 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   // 4. Handle optional file uploads (avatar, coverImage) and upload them to Cloudinary
-  //    These paths come from Multer's file handling in req.files
   const avatarLocalPath = req.files?.avatar?.[0]?.path;
   let coverImageLocalPath;
   if (
@@ -82,16 +92,34 @@ const registerUser = asyncHandler(async (req, res) => {
   const avatar = await uploadOnCloudinary(avatarLocalPath);
   const coverImage = await uploadOnCloudinary(coverImageLocalPath);
 
-  // 5. Create the user document in the database with default role from model
-  const user = await User.create({
+  // 5. Determine schoolId and role for the user
+  let userData = {
     fullName,
     avatar: avatar?.url || "",
     coverImage: coverImage?.url || "",
     email,
     password,
     username: username?.toLowerCase() || "",
-    // No role specified - the model default "user" will be used
-  });
+  };
+
+  // Set role with proper defaults
+  if (role && ['student', 'teacher', 'classTeacher', 'schoolAdmin'].includes(role)) {
+    userData.role = role;
+  } else {
+    userData.role = 'student'; // Default role
+  }
+
+  // Handle schoolId for multi-tenancy
+  if (userData.role !== 'superAdmin') {
+    // For non-super admin users, schoolId is required
+    // In a real implementation, this would come from the registration context
+    // For now, we'll use a default school or require it to be passed
+    const schoolId = req.body.schoolId || process.env.DEFAULT_SCHOOL_ID || 'dev-school-001';
+    userData.schoolId = schoolId;
+  }
+
+  // Create the user document in the database
+  const user = await User.create(userData);
 
   // 6. Fetch the newly created user, omitting password & refreshToken
   const createdUser = await User.findById(user._id).select("-password -refreshToken");
@@ -121,12 +149,21 @@ const loginUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "username or email is required");
   }
 
+  if (!password) {
+    throw new ApiError(400, "password is required");
+  }
+
   const user = await User.findOne({
     $or: [{ username }, { email }],
   });
 
   if (!user) {
     throw new ApiError(404, "User does not exist");
+  }
+
+  // Check if user account is active
+  if (user.isActive === false) {
+    throw new ApiError(403, "Your account has been deactivated. Please contact administrator.");
   }
 
   const isPasswordValid = await user.isPasswordCorrect(password);
@@ -138,13 +175,15 @@ const loginUser = asyncHandler(async (req, res) => {
   const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id);
 
   // Retrieve user object without password & refreshToken
-  const loggedInUser = await User.findById(user._id).select("-password -refreshtoken");
+  const loggedInUser = await User.findById(user._id)
+    .select("-password -refreshToken")
+    .populate('schoolId', 'name logo address');
 
   // Cookie options for cross-origin requests
   const options = {
     httpOnly: true,
-    secure: true,
-    sameSite: 'none',
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     domain: process.env.NODE_ENV === 'production' ? '.ionia.sbs' : undefined,
     path: '/',
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
@@ -158,7 +197,17 @@ const loginUser = asyncHandler(async (req, res) => {
       new ApiResponse(
         200,
         {
-          user: loggedInUser,
+          user: {
+            _id: loggedInUser._id,
+            fullName: loggedInUser.fullName,
+            email: loggedInUser.email,
+            username: loggedInUser.username,
+            role: loggedInUser.role,
+            schoolId: loggedInUser.schoolId,
+            avatar: loggedInUser.avatar,
+            isEmailVerified: loggedInUser.isEmailVerified,
+            assignedClasses: loggedInUser.assignedClasses || []
+          },
           accessToken,
           refreshToken,
         },

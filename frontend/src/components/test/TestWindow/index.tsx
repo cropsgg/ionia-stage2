@@ -65,6 +65,12 @@ interface Question {
   userAnswer?: number;
 }
 
+interface Answer {
+  questionId: string;
+  answerOptionIndex: number | undefined;
+  timeSpent: number;
+}
+
 // Function to fetch analysis data - add this after imports and before component definition
 export const fetchTestAnalysis = async (attemptId: string) => {
   try {
@@ -359,23 +365,21 @@ const TestWindow: React.FC<TestWindowProps> = ({ examType, paperId, subject }) =
 
     try {
       // Create submission payload
-      // @ts-ignore - Temporary suppression for build
-      const formattedAnswers = currentTest?.questions
+      const formattedAnswers: Answer[] = currentTest?.questions
         .map((q: Question, index: number) => ({
           questionId: q._id,
           answerOptionIndex: q.userAnswer,
           timeSpent: timeTrackingState.questionTimes[index]?.totalTime || 0
         }))
-        .filter(answer => answer.questionId) || [];
+        .filter((answer: Answer) => answer.questionId) || [];
 
       // Create metadata about question states
-      // @ts-ignore - Temporary suppression for build
       const questionStates = {
-        notVisited: currentTest?.questions.filter(q => !q.isVisited).map(q => q._id) || [],
-        notAnswered: currentTest?.questions.filter(q => q.isVisited && q.userAnswer === undefined).map(q => q._id) || [],
-        answered: currentTest?.questions.filter(q => q.userAnswer !== undefined).map(q => q._id) || [],
-        markedForReview: currentTest?.questions.filter(q => q.isMarked).map(q => q._id) || [],
-        markedAndAnswered: currentTest?.questions.filter(q => q.isMarked && q.userAnswer !== undefined).map(q => q._id) || []
+        notVisited: currentTest?.questions.filter((q: Question) => !q.isVisited).map((q: Question) => q._id) || [],
+        notAnswered: currentTest?.questions.filter((q: Question) => q.isVisited && q.userAnswer === undefined).map((q: Question) => q._id) || [],
+        answered: currentTest?.questions.filter((q: Question) => q.userAnswer !== undefined).map((q: Question) => q._id) || [],
+        markedForReview: currentTest?.questions.filter((q: Question) => q.isMarked).map((q: Question) => q._id) || [],
+        markedAndAnswered: currentTest?.questions.filter((q: Question) => q.isMarked && q.userAnswer !== undefined).map((q: Question) => q._id) || []
       };
 
       // Create navigation history from tracked events
@@ -423,7 +427,7 @@ const TestWindow: React.FC<TestWindowProps> = ({ examType, paperId, subject }) =
         metadata: {
           totalQuestions: currentTest?.questions.length || 0,
           answeredQuestions: questionStates.answered,
-          visitedQuestions: currentTest?.questions.filter(q => q.isVisited).map(q => q._id) || [],
+          visitedQuestions: currentTest?.questions.filter((q: Question) => q.isVisited).map((q: Question) => q._id) || [],
           markedForReview: questionStates.markedForReview,
           selectedLanguage: language
         },
@@ -500,7 +504,7 @@ const TestWindow: React.FC<TestWindowProps> = ({ examType, paperId, subject }) =
     let answered = 0;
     let marked = 0;
     
-    currentTest.questions.forEach(q => {
+    currentTest.questions.forEach((q: Question) => {
       if (q.userAnswer !== undefined) answered++;
       if (q.isMarked) marked++;
     });
@@ -584,7 +588,7 @@ const TestWindow: React.FC<TestWindowProps> = ({ examType, paperId, subject }) =
     if (currentTest.questions.length === 0) return false;
     
     // Check that questions have the required fields for the new format
-    return currentTest.questions.every(q => {
+    return currentTest.questions.every((q: Question) => {
       if (!q) return false;
       
       // Handle both string questions and object questions
@@ -596,7 +600,7 @@ const TestWindow: React.FC<TestWindowProps> = ({ examType, paperId, subject }) =
       // Check options
       const hasValidOptions = Array.isArray(q.options) && 
                              q.options.length > 0 &&
-                             q.options.every(opt => 
+                             q.options.every((opt: QuestionOption | string) => 
                                typeof opt === 'string' || 
                                (typeof opt === 'object' && opt && typeof opt.text === 'string')
                              );
@@ -762,7 +766,7 @@ const TestWindow: React.FC<TestWindowProps> = ({ examType, paperId, subject }) =
             </div>
             
             <div className="space-y-3">
-              {currentQuestionData.options.map((option, index) => {
+              {currentQuestionData.options.map((option: QuestionOption | string, index: number) => {
                 const optionText = typeof option === 'string' ? option : option.text;
                 const optionImage = typeof option === 'object' && option.image?.url ? option.image.url : null;
                 

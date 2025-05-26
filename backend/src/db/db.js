@@ -41,19 +41,29 @@ const connectDB = async () => {
             process.exit(0);
         });
         
+        return true;
+        
     } catch (err) {
         console.error("❌ MongoDB connection error:", err);
         console.log(`Environment check: NODE_ENV=${process.env.NODE_ENV}, IS_DEV=${CONFIG.SERVER.IS_DEVELOPMENT}`);
         
-        // Always continue in development mode without database
-        console.log("⚠️  Development mode: Continuing without database connection");
-        console.log("   API endpoints will work but database operations will fail");
-        console.log("   Please install and start MongoDB locally or configure Atlas connection");
-        console.log("   To install MongoDB: brew install mongodb-community");
-        console.log("   To start MongoDB: brew services start mongodb-community");
-        
-        // Don't exit, continue without database
-        return;
+        // In development mode, provide helpful error messages and fallback
+        if (CONFIG.SERVER.IS_DEVELOPMENT) {
+            console.log("⚠️  Development mode: MongoDB connection failed");
+            console.log("   Possible solutions:");
+            console.log("   1. Install MongoDB locally: brew install mongodb-community");
+            console.log("   2. Start MongoDB: brew services start mongodb-community");
+            console.log("   3. Configure Atlas connection in .env file");
+            console.log("   4. Use Docker: docker run -d -p 27017:27017 mongo");
+            console.log("   ⚠️  CONTINUING WITHOUT DATABASE - API will work but data operations will fail");
+            
+            // Don't exit in development, allow server to start
+            return false;
+        } else {
+            // In production, database connection is critical
+            console.error("💥 Production environment requires database connection");
+            throw err;
+        }
     }
 }
 

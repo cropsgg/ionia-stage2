@@ -10,6 +10,7 @@
     "deploy": "npm install --only=prod && npm start",
     "lint": "eslint .",
     "test": "jest",
+    "setup": "node setup-dev.js",
     "migrate": "node src/scripts/run-migrations.js",
     "migrate:reset-password": "node src/scripts/migrations/add-reset-password-fields.js",
     "test:email": "node -r dotenv/config src/scripts/test-email.js"

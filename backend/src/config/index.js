@@ -198,25 +198,28 @@ export const CORS_CONFIG = {
     }
     
     // Allow any subdomain of ionia.sbs
-    if (origin.endsWith('.ionia.sbs') || origin === 'https://ionia.sbs') {
+    if (origin.match(/^https?:\/\/([a-z0-9-]+\.)?ionia\.sbs$/)) {
       return callback(null, true);
     }
     
-    console.log(`❌ Origin ${origin} not allowed by CORS`);
-    callback(new Error("Not allowed by CORS"));
+    // Reject origin
+    const error = new Error('Not allowed by CORS');
+    error.status = 403;
+    return callback(error, false);
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: [
-    "Origin", 
-    "X-Requested-With", 
-    "Content-Type", 
-    "Accept", 
-    "Authorization", 
-    "Cookie",
-    "Access-Control-Allow-Credentials"
+    'Origin',
+    'X-Requested-With',
+    'Content-Type',
+    'Accept',
+    'Authorization',
+    'X-Api-Version',
+    'X-CSRF-Token'
   ],
-  exposedHeaders: ["Set-Cookie", "Authorization"],
+  exposedHeaders: ['Set-Cookie'],
+  optionsSuccessStatus: 200 // For legacy browser support
 };
 
 // ===========================================
@@ -227,7 +230,7 @@ export const CONFIG = {
   API: API_CONFIG,
   DATABASE: DATABASE_CONFIG,
   JWT: JWT_CONFIG,
-  COOKIE: COOKIE_CONFIG,
+  COOKIES: COOKIE_CONFIG,
   CLOUDINARY: CLOUDINARY_CONFIG,
   EMAIL: EMAIL_CONFIG,
   TENANCY: TENANCY_CONFIG,
