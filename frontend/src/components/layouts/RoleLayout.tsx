@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
@@ -33,9 +33,70 @@ const RoleLayout: React.FC<RoleLayoutProps> = ({
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
   const { user } = useSelector((state: RootState) => state.auth);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  // If role mismatch, push to login (fallback – middleware should usually catch this)
-  if (!user || user.role !== expectedRole) {
+  useEffect(() => {
+    // Get user data from Redux, localStorage, or cookies
+    const getCurrentUserData = () => {
+      // First try Redux store
+      if (user) {
+        setCurrentUser(user);
+        setLoading(false);
+        return;
+      }
+
+      // Then try localStorage (mock user)
+      try {
+        const mockUser = localStorage.getItem('mockUser');
+        if (mockUser) {
+          const userData = JSON.parse(mockUser);
+          setCurrentUser(userData);
+          setLoading(false);
+          return;
+        }
+      } catch (error) {
+        console.error('Error parsing mock user from localStorage:', error);
+      }
+
+      // Finally try cookies
+      try {
+        const cookieUser = Cookies.get('mockUser');
+        if (cookieUser) {
+          const userData = JSON.parse(cookieUser);
+          setCurrentUser(userData);
+          setLoading(false);
+          return;
+        }
+      } catch (error) {
+        console.error('Error parsing mock user from cookies:', error);
+      }
+
+      // No user found
+      setCurrentUser(null);
+      setLoading(false);
+    };
+
+    getCurrentUserData();
+  }, [user]);
+
+  // Normalize roles for comparison
+  const normalizeRole = (role: string) => role.toLowerCase().replace('-', '');
+
+  // If still loading, show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If no user or role mismatch, redirect to login
+  if (!currentUser || normalizeRole(currentUser.role) !== normalizeRole(expectedRole)) {
     if (typeof window !== 'undefined') {
       router.push('/auth/login');
     }
@@ -44,6 +105,7 @@ const RoleLayout: React.FC<RoleLayoutProps> = ({
 
   const handleLogout = () => {
     Cookies.remove('mockUser');
+    Cookies.remove('accessToken');
     localStorage.removeItem('mockUser');
     localStorage.removeItem('accessToken');
     dispatch(logout());
@@ -64,14 +126,14 @@ const RoleLayout: React.FC<RoleLayoutProps> = ({
 
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <span className="font-medium">{user?.fullName}</span>
+              <span className="font-medium">{currentUser?.fullName}</span>
               <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center overflow-hidden">
-                {user?.avatar ? (
+                {currentUser?.avatar ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={user.avatar} alt={user.fullName} className="h-8 w-8 rounded-full" />
+                  <img src={currentUser.avatar} alt={currentUser.fullName} className="h-8 w-8 rounded-full" />
                 ) : (
                   <span className="text-emerald-800 font-semibold">
-                    {user?.fullName?.charAt(0).toUpperCase()}
+                    {currentUser?.fullName?.charAt(0).toUpperCase()}
                   </span>
                 )}
               </div>

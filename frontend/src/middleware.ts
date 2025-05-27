@@ -69,11 +69,12 @@ export async function middleware(request: NextRequest) {
       // Redirect to appropriate dashboard
       if (userRole) {
         let dashboardPath = '/';
-        if (userRole === 'student') dashboardPath = '/student/dashboard';
-        else if (userRole === 'teacher') dashboardPath = '/teacher/dashboard';
-        else if (userRole === 'class-teacher') dashboardPath = '/class-teacher/dashboard';
-        else if (userRole === 'school-admin') dashboardPath = '/school-admin/dashboard';
-        else if (userRole === 'super-admin') dashboardPath = '/super-admin/dashboard';
+        const normalizedRole = userRole.toLowerCase();
+        if (normalizedRole === 'student') dashboardPath = '/student/dashboard';
+        else if (normalizedRole === 'teacher') dashboardPath = '/teacher/dashboard';
+        else if (normalizedRole === 'classteacher' || normalizedRole === 'class-teacher') dashboardPath = '/class-teacher/dashboard';
+        else if (normalizedRole === 'schooladmin' || normalizedRole === 'school-admin') dashboardPath = '/school-admin/dashboard';
+        else if (normalizedRole === 'superadmin' || normalizedRole === 'super-admin') dashboardPath = '/super-admin/dashboard';
         
         return NextResponse.redirect(new URL(dashboardPath, request.url));
       }
@@ -125,29 +126,35 @@ export async function middleware(request: NextRequest) {
       // Check if user has access to this path
       let hasAccess = false;
       
+      // Normalize role for comparison (handle both camelCase and kebab-case)
+      const normalizedRole = userRole.toLowerCase();
+      
       // Check if the current path starts with any of the paths allowed for the user's role
-      if (userRole === 'student' && pathname.startsWith('/student')) {
+      if (normalizedRole === 'student' && pathname.startsWith('/student')) {
         hasAccess = true;
-      } else if (userRole === 'teacher' && pathname.startsWith('/teacher')) {
+      } else if (normalizedRole === 'teacher' && pathname.startsWith('/teacher')) {
         hasAccess = true;
-      } else if (userRole === 'class-teacher' && 
+      } else if ((normalizedRole === 'classteacher' || normalizedRole === 'class-teacher') && 
                 (pathname.startsWith('/class-teacher') || pathname.startsWith('/teacher'))) {
         // Class teachers can access both class-teacher and teacher paths
         hasAccess = true;
-      } else if (userRole === 'school-admin' && pathname.startsWith('/school-admin')) {
+      } else if ((normalizedRole === 'schooladmin' || normalizedRole === 'school-admin') && 
+                pathname.startsWith('/school-admin')) {
         hasAccess = true;
-      } else if (userRole === 'super-admin' && pathname.startsWith('/super-admin')) {
+      } else if ((normalizedRole === 'superadmin' || normalizedRole === 'super-admin') && 
+                pathname.startsWith('/super-admin')) {
         hasAccess = true;
       }
       
       // If no access, redirect to appropriate dashboard
       if (!hasAccess) {
         let dashboardPath = '/';
-        if (userRole === 'student') dashboardPath = '/student/dashboard';
-        else if (userRole === 'teacher') dashboardPath = '/teacher/dashboard';
-        else if (userRole === 'class-teacher') dashboardPath = '/class-teacher/dashboard';
-        else if (userRole === 'school-admin') dashboardPath = '/school-admin/dashboard';
-        else if (userRole === 'super-admin') dashboardPath = '/super-admin/dashboard';
+        const normalizedRole = userRole.toLowerCase();
+        if (normalizedRole === 'student') dashboardPath = '/student/dashboard';
+        else if (normalizedRole === 'teacher') dashboardPath = '/teacher/dashboard';
+        else if (normalizedRole === 'classteacher' || normalizedRole === 'class-teacher') dashboardPath = '/class-teacher/dashboard';
+        else if (normalizedRole === 'schooladmin' || normalizedRole === 'school-admin') dashboardPath = '/school-admin/dashboard';
+        else if (normalizedRole === 'superadmin' || normalizedRole === 'super-admin') dashboardPath = '/super-admin/dashboard';
         
         return NextResponse.redirect(new URL(dashboardPath, request.url));
       }

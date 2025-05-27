@@ -23,10 +23,7 @@ const LoginPage = () => {
     setError('');
 
     try {
-      // In a real implementation, we would call the API through Redux
-      // await dispatch(login({ email, password })).unwrap();
-      
-      // For now, let's simulate login with different user roles
+      // Legacy mock users for manual testing
       const mockUsers = {
         'student@example.com': { role: 'student', fullName: 'Student User' },
         'teacher@example.com': { role: 'teacher', fullName: 'Teacher User' },
@@ -35,31 +32,42 @@ const LoginPage = () => {
         'super-admin@example.com': { role: 'super-admin', fullName: 'Super Admin User' },
       };
       
+      // Also support backend demo credentials
+      const backendMockUsers = {
+        'student@demo.ionia.sbs': { role: 'student', fullName: 'Student User' },
+        'teacher@demo.ionia.sbs': { role: 'teacher', fullName: 'Teacher User' },
+        'classteacher@demo.ionia.sbs': { role: 'classTeacher', fullName: 'Class Teacher User' },
+        'admin@demo.ionia.sbs': { role: 'schoolAdmin', fullName: 'School Admin User' },
+        'superadmin@ionia.sbs': { role: 'superAdmin', fullName: 'Super Admin User' },
+      };
+      
       // Simulate login delay
       await new Promise((resolve) => setTimeout(resolve, 1000));
       
       if (password === 'password123') {
-        const user = mockUsers[email as keyof typeof mockUsers];
+        let user = mockUsers[email as keyof typeof mockUsers] || backendMockUsers[email as keyof typeof backendMockUsers];
         
         if (user) {
           // Store the mock user in cookie for middleware
           Cookies.set('mockUser', JSON.stringify(user));
+          Cookies.set('accessToken', 'mock-jwt-token'); // Add accessToken cookie for middleware
           
           // Also store in localStorage for client side
           localStorage.setItem('accessToken', 'mock-jwt-token');
           localStorage.setItem('mockUser', JSON.stringify(user));
           
-          // Redirect based on role
-          if (user.role === 'student') {
+          // Redirect based on role (handle both role formats)
+          const role = user.role;
+          if (role === 'student') {
             router.push('/student/dashboard');
-          } else if (user.role === 'teacher') {
+          } else if (role === 'teacher') {
             router.push('/teacher/dashboard');
-          } else if (user.role === 'class-teacher') {
+          } else if (role === 'class-teacher' || role === 'classTeacher') {
             router.push('/class-teacher/dashboard');
-          } else if (user.role === 'school-admin') {
+          } else if (role === 'school-admin' || role === 'schoolAdmin') {
             router.push('/school-admin/dashboard');
           } else {
-            // super-admin
+            // super-admin or superAdmin
             router.push('/super-admin/dashboard');
           }
           return;
@@ -200,23 +208,23 @@ const LoginPage = () => {
             <p>Demo accounts for testing:</p>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
               <div className="text-xs bg-gray-100 p-2 rounded">
-                <div><strong>Student:</strong> student@example.com</div>
+                <div><strong>Student:</strong> student@demo.ionia.sbs</div>
                 <div><strong>Pass:</strong> password123</div>
               </div>
               <div className="text-xs bg-gray-100 p-2 rounded">
-                <div><strong>Teacher:</strong> teacher@example.com</div>
+                <div><strong>Teacher:</strong> teacher@demo.ionia.sbs</div>
                 <div><strong>Pass:</strong> password123</div>
               </div>
               <div className="text-xs bg-gray-100 p-2 rounded">
-                <div><strong>Class Teacher:</strong> class-teacher@example.com</div>
+                <div><strong>Class Teacher:</strong> classteacher@demo.ionia.sbs</div>
                 <div><strong>Pass:</strong> password123</div>
               </div>
               <div className="text-xs bg-gray-100 p-2 rounded">
-                <div><strong>School Admin:</strong> school-admin@example.com</div>
+                <div><strong>School Admin:</strong> admin@demo.ionia.sbs</div>
                 <div><strong>Pass:</strong> password123</div>
               </div>
               <div className="text-xs bg-gray-100 p-2 rounded md:col-span-2">
-                <div><strong>Super Admin:</strong> super-admin@example.com</div>
+                <div><strong>Super Admin:</strong> superadmin@ionia.sbs</div>
                 <div><strong>Pass:</strong> password123</div>
               </div>
             </div>
