@@ -51,32 +51,15 @@ export default function Footer({ className = "" }: FooterProps) {
               Quick Links
               <span className="absolute bottom-0 left-0 w-1/2 h-0.5 bg-gradient-to-r from-emerald-400 to-emerald-200"></span>
             </h4>
-            <ul className="space-y-3">
+            <ul className="space-y-2">
               <li>
-                <Link 
-                  href="/about" 
-                  className="text-emerald-200 hover:text-white transition-colors duration-300 flex items-center space-x-2 group"
-                >
-                  <span className="w-0 group-hover:w-2 h-0.5 bg-emerald-400 transition-all duration-300"></span>
-                  <span>About Us</span>
+                <Link href="/auth/login" className="hover:text-white transition-colors duration-300">
+                  Login
                 </Link>
               </li>
               <li>
-                <Link 
-                  href="/contact" 
-                  className="text-emerald-200 hover:text-white transition-colors duration-300 flex items-center space-x-2 group"
-                >
-                  <span className="w-0 group-hover:w-2 h-0.5 bg-emerald-400 transition-all duration-300"></span>
-                  <span>Contact</span>
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  href="/management/superadmin/schools" 
-                  className="text-emerald-200 hover:text-white transition-colors duration-300 flex items-center space-x-2 group"
-                >
-                  <span className="w-0 group-hover:w-2 h-0.5 bg-emerald-400 transition-all duration-300"></span>
-                  <span>School Management</span>
+                <Link href="/auth/register" className="hover:text-white transition-colors duration-300">
+                  Register
                 </Link>
               </li>
             </ul>
@@ -110,14 +93,6 @@ export default function Footer({ className = "" }: FooterProps) {
         >
           <p className="text-emerald-200 text-sm">
             © {new Date().getFullYear()} Ionia. All rights reserved.
-            <span className="mx-2">|</span>
-            <Link href="/privacy" className="hover:text-white transition-colors duration-300">
-              Privacy Policy
-            </Link>
-            <span className="mx-2">|</span>
-            <Link href="/terms" className="hover:text-white transition-colors duration-300">
-              Terms of Service
-            </Link>
           </p>
         </motion.div>
       </div>

@@ -322,14 +322,7 @@ export default function RegisterPage() {
 
         <div className="mt-6">
           <p className="text-center text-sm text-gray-600">
-            By signing up, you agree to our{' '}
-            <Link href="/terms" className="font-medium text-emerald-600 hover:text-emerald-500">
-              Terms of Service
-            </Link>{' '}
-            and{' '}
-            <Link href="/privacy" className="font-medium text-emerald-600 hover:text-emerald-500">
-              Privacy Policy
-            </Link>
+            By creating an account, you agree to our terms of service and privacy policy.
           </p>
         </div>
       </div>

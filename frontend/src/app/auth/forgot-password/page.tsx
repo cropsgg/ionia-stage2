@@ -175,9 +175,10 @@ const ForgotPassword = () => {
           <div className="px-8 py-4 bg-gray-50 border-t border-gray-100 text-center">
             <p className="text-xs text-gray-500">
               If you don't receive an email, please check your spam folder or{" "}
-              <Link href="/contact" className="font-medium text-emerald-600 hover:text-emerald-500">
-                contact support
-              </Link>
+              Need help? Email us at{' '}
+              <a href="mailto:support@ionia.edu" className="font-medium text-emerald-600 hover:text-emerald-500">
+                support@ionia.edu
+              </a>
             </p>
           </div>
         </div>

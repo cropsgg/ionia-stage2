@@ -5,7 +5,7 @@ import type { NextRequest } from 'next/server';
 const roleBasedPaths = {
   student: ['/student'],
   teacher: ['/teacher'],
-  'class-teacher': ['/class-teacher'],
+  principal: ['/principal'],
   'school-admin': ['/school-admin'],
   'super-admin': ['/super-admin']
 };
@@ -13,10 +13,6 @@ const roleBasedPaths = {
 // Define public paths that should be accessible without authentication
 const publicPaths = [
   '/',
-  '/about',
-  '/contact',
-  '/terms',
-  '/privacy',
   '/api/auth',
   '/_next',
   '/static',
@@ -72,7 +68,7 @@ export async function middleware(request: NextRequest) {
         const normalizedRole = userRole.toLowerCase();
         if (normalizedRole === 'student') dashboardPath = '/student/dashboard';
         else if (normalizedRole === 'teacher') dashboardPath = '/teacher/dashboard';
-        else if (normalizedRole === 'classteacher' || normalizedRole === 'class-teacher') dashboardPath = '/class-teacher/dashboard';
+        else if (normalizedRole === 'principal') dashboardPath = '/principal/dashboard';
         else if (normalizedRole === 'schooladmin' || normalizedRole === 'school-admin') dashboardPath = '/school-admin/dashboard';
         else if (normalizedRole === 'superadmin' || normalizedRole === 'super-admin') dashboardPath = '/super-admin/dashboard';
         
@@ -134,9 +130,7 @@ export async function middleware(request: NextRequest) {
         hasAccess = true;
       } else if (normalizedRole === 'teacher' && pathname.startsWith('/teacher')) {
         hasAccess = true;
-      } else if ((normalizedRole === 'classteacher' || normalizedRole === 'class-teacher') && 
-                (pathname.startsWith('/class-teacher') || pathname.startsWith('/teacher'))) {
-        // Class teachers can access both class-teacher and teacher paths
+      } else if (normalizedRole === 'principal' && pathname.startsWith('/principal')) {
         hasAccess = true;
       } else if ((normalizedRole === 'schooladmin' || normalizedRole === 'school-admin') && 
                 pathname.startsWith('/school-admin')) {
@@ -152,7 +146,7 @@ export async function middleware(request: NextRequest) {
         const normalizedRole = userRole.toLowerCase();
         if (normalizedRole === 'student') dashboardPath = '/student/dashboard';
         else if (normalizedRole === 'teacher') dashboardPath = '/teacher/dashboard';
-        else if (normalizedRole === 'classteacher' || normalizedRole === 'class-teacher') dashboardPath = '/class-teacher/dashboard';
+        else if (normalizedRole === 'principal') dashboardPath = '/principal/dashboard';
         else if (normalizedRole === 'schooladmin' || normalizedRole === 'school-admin') dashboardPath = '/school-admin/dashboard';
         else if (normalizedRole === 'superadmin' || normalizedRole === 'super-admin') dashboardPath = '/super-admin/dashboard';
         

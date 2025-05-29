@@ -8,6 +8,7 @@ import Cookies from 'js-cookie';
 import { FiLogOut } from 'react-icons/fi';
 import { logout } from '@/redux/slices/authSlice';
 import { RootState, AppDispatch } from '@/redux/store';
+import NotificationCenter from '@/components/ui/NotificationCenter';
 
 export interface NavItem {
   href: string;
@@ -125,6 +126,9 @@ const RoleLayout: React.FC<RoleLayoutProps> = ({
           </div>
 
           <div className="flex items-center space-x-4">
+            {/* Notification Center */}
+            <NotificationCenter />
+            
             <div className="flex items-center space-x-2">
               <span className="font-medium">{currentUser?.fullName}</span>
               <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center overflow-hidden">
