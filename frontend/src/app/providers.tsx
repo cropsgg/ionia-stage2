@@ -12,4 +12,4 @@ export function Providers({ children }: { children: ReactNode }) {
       </ReduxProvider>
     </ErrorBoundary>
   );
-} 
+}
