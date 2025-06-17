@@ -211,11 +211,11 @@ const TeacherDashboard = () => {
           })}
         </div>
       </div>
-
+      
       {/* Stats Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="p-5">
-          <StatBlock
+        <StatBlock
             icon={<FiUsers size={20} className="text-blue-600" />}
             title="Total Students"
             value={getTotalStudents()}
@@ -228,7 +228,7 @@ const TeacherDashboard = () => {
         </Card>
 
         <Card className="p-5">
-          <StatBlock
+        <StatBlock
             icon={<FiFileText size={20} className="text-orange-600" />}
             title="Pending Reviews"
             value={getTotalPendingSubmissions()}
@@ -241,7 +241,7 @@ const TeacherDashboard = () => {
         </Card>
 
         <Card className="p-5">
-          <StatBlock
+        <StatBlock
             icon={<FiBarChart2 size={20} className="text-green-600" />}
             title="Average Performance"
             value={getAverageClassPerformance()}
@@ -254,7 +254,7 @@ const TeacherDashboard = () => {
         </Card>
 
         <Card className="p-5">
-          <StatBlock
+        <StatBlock
             icon={<FiBook size={20} className="text-purple-600" />}
             title="Classes Teaching"
             value={classes.length}
@@ -262,7 +262,7 @@ const TeacherDashboard = () => {
           />
         </Card>
       </div>
-
+      
       {/* Quick Actions Panel */}
       <Card title="Quick Actions" className="p-5">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -302,13 +302,13 @@ const TeacherDashboard = () => {
           {/* My Classes */}
           <Card title="My Classes" className="p-5">
             {classes.length === 0 ? (
-              <EmptyState 
+            <EmptyState 
                 icon={<FiUsers className="h-8 w-8" />}
                 title="No Classes Assigned"
                 description="Contact your administrator to get assigned to classes."
-                compact
-              />
-            ) : (
+              compact
+            />
+          ) : (
               <div className="space-y-4">
                 {classes.map((classData) => (
                   <div key={classData.id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
@@ -319,7 +319,7 @@ const TeacherDashboard = () => {
                       </div>
                       <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
                         {classData.studentCount} students
-                      </span>
+                  </span>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
@@ -360,19 +360,19 @@ const TeacherDashboard = () => {
                   </div>
                 ))}
               </div>
-            )}
-          </Card>
-
+          )}
+        </Card>
+        
           {/* Recent Submissions */}
           <Card title="Recent Submissions" className="p-5">
             {recentSubmissions.length === 0 ? (
-              <EmptyState 
+            <EmptyState 
                 icon={<FiFileText className="h-8 w-8" />}
                 title="No Recent Submissions"
                 description="Student submissions will appear here when received."
-                compact
-              />
-            ) : (
+              compact
+            />
+          ) : (
               <div className="space-y-3">
                 {recentSubmissions.map((submission) => (
                   <div key={submission.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
@@ -431,8 +431,8 @@ const TeacherDashboard = () => {
                   </div>
                 ))}
               </div>
-            )}
-          </Card>
+          )}
+        </Card>
 
           {/* Teaching Schedule */}
           <Card title="Today's Schedule" className="p-5">
@@ -497,4 +497,4 @@ const TeacherDashboard = () => {
   );
 };
 
-export default TeacherDashboard;
+export default TeacherDashboard; 

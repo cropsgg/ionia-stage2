@@ -513,8 +513,8 @@ const StudentHomework = () => {
           {filteredHomework.map(hw => viewMode === 'grid' ? renderHomeworkCard(hw) : renderHomeworkList(hw))}
         </div>
       )}
-    </div>
-  );
+  </div>
+);
 };
 
 export default StudentHomework; 

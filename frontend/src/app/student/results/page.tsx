@@ -237,7 +237,7 @@ const StudentResults = () => {
   };
 
   const renderGradesList = () => (
-    <div className="space-y-4">
+  <div className="space-y-4">
       {filteredGrades.map((grade) => (
         <Card key={grade.id} className="p-5 hover:shadow-md transition-shadow">
           <div className="flex justify-between items-start mb-3">
@@ -433,8 +433,8 @@ const StudentResults = () => {
           </div>
         </div>
       </Card>
-    </div>
-  );
+  </div>
+);
 
   return (
     <div className="space-y-6">

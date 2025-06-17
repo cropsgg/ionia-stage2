@@ -630,7 +630,7 @@ const LearningProfilePage = () => {
 
           {/* Achievement Progress */}
           <Card title="Progress Towards New Achievements" className="p-5">
-            <div className="space-y-4">
+  <div className="space-y-4">
               <div className="p-4 border rounded-lg">
                 <div className="flex justify-between items-center mb-2">
                   <div className="flex items-center gap-2">
@@ -666,8 +666,8 @@ const LearningProfilePage = () => {
           </Card>
         </div>
       )}
-    </div>
-  );
+  </div>
+);
 };
 
 export default LearningProfilePage; 
