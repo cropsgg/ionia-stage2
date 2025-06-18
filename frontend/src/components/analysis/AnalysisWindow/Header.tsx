@@ -14,7 +14,6 @@ interface TestInfo {
   attemptsList?: {id: string, number: number}[];
   attemptId?: string;
 }
-
 interface HeaderProps {
   testInfo: TestInfo;
   onAttemptChange?: (attemptId: string) => void;
